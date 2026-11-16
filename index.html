@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <!-- 嚴格遵守原生 App 視窗防縮放與安全區域設定 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="海綿寶寶圖鑑" />
+  <meta name="theme-color" content="#eab308" id="meta-theme-color" />
+  <title>比奇堡圖鑑：海綿寶寶角色介紹</title>
+
+  <!-- 載入 Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans TC"', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Google Fonts: Noto Sans TC & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+
+  <style>
+    /* 全域原生 App 互動與防誤觸設定 */
+    * {
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow-x: hidden;
+      overscroll-behavior-y: none;
+    }
+
+    /* 安全區域留白適配 */
+    .safe-top {
+      padding-top: max(1rem, env(safe-area-inset-top));
+    }
+    .safe-bottom {
+      padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+    }
+
+    /* 按壓觸動回饋 */
+    .press-feedback {
+      transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.15s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .press-feedback:active {
+      transform: scale(0.95);
+      opacity: 0.9;
+    }
+
+    /* 毛玻璃質感 */
+    .glass-panel {
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    /* 海底氣泡漂浮微動畫 */
+    @keyframes floatBubble {
+      0% {
+        transform: translateY(0) scale(0.9);
+        opacity: 0;
+      }
+      20% {
+        opacity: 0.65;
+      }
+      80% {
+        opacity: 0.55;
+      }
+      100% {
+        transform: translateY(-230px) scale(1.15);
+        opacity: 0;
+      }
+    }
+
+    .bubble {
+      position: absolute;
+      border-radius: 9999px;
+      background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.25) 60%, rgba(255, 255, 255, 0.05));
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      pointer-events: none;
+      animation: floatBubble var(--dur, 5s) ease-in infinite;
+      animation-delay: var(--delay, 0s);
+    }
+
+    /* 角色主視覺懸浮呼吸動畫 */
+    @keyframes characterFloat {
+      0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+      }
+      50% {
+        transform: translateY(-7px) rotate(1.2deg);
+      }
+    }
+
+    .character-float {
+      animation: characterFloat 3.8s ease-in-out infinite;
+    }
+
+    /* 卡片切換過渡動畫 */
+    @keyframes cardEnter {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .animate-card-enter {
+      animation: cardEnter 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+  </style>
+</head>
+<body class="bg-sky-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-300">
+
+  <!-- 背景動態主題光暈 -->
+  <div id="ambient-bg" class="fixed inset-0 pointer-events-none transition-all duration-500 opacity-75 dark:opacity-45"
+       style="background: radial-gradient(circle at 50% 18%, rgba(250, 204, 21, 0.45), transparent 62%), linear-gradient(180deg, rgba(14, 165, 233, 0.25) 0%, rgba(2, 132, 199, 0.1) 100%);">
+  </div>
+
+  <!-- 主應用程式容器 -->
+  <div id="app" class="relative min-h-screen max-w-lg mx-auto flex flex-col justify-between px-4 safe-top safe-bottom">
+
+    <!-- 頂部 App Bar 與 4 格角色導覽 Tab -->
+    <header class="w-full z-20 space-y-3">
+      <div class="flex items-center justify-between pt-1">
+        <div class="flex items-center gap-2.5">
+          <!-- 迷你海綿寶寶圖示 -->
+          <div id="header-badge" class="w-9 h-9 rounded-2xl flex items-center justify-center shadow-md transition-colors duration-300 bg-yellow-400 text-slate-900">
+            <svg viewBox="0 0 64 64" class="w-6 h-6" aria-hidden="true">
+              <rect x="8" y="8" width="48" height="48" rx="10" fill="#FACC15" stroke="#854D0E" stroke-width="3"/>
+              <circle cx="16" cy="16" r="3" fill="#CA8A04" opacity="0.6"/>
+              <circle cx="48" cy="20" r="2.5" fill="#CA8A04" opacity="0.6"/>
+              <circle cx="15" cy="46" r="2.5" fill="#CA8A04" opacity="0.6"/>
+              <circle cx="25" cy="27" r="6" fill="#FFF" stroke="#1E293B" stroke-width="2"/>
+              <circle cx="39" cy="27" r="6" fill="#FFF" stroke="#1E293B" stroke-width="2"/>
+              <circle cx="26" cy="27" r="2.5" fill="#0284C7"/>
+              <circle cx="38" cy="27" r="2.5" fill="#0284C7"/>
+              <path d="M21 38 Q32 47 43 38" fill="none" stroke="#1E293B" stroke-width="2.5" stroke-linecap="round"/>
+              <rect x="27" y="41" width="4" height="4" rx="1" fill="#FFF" stroke="#1E293B" stroke-width="1.5"/>
+              <rect x="33" y="41" width="4" height="4" rx="1" fill="#FFF" stroke="#1E293B" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div>
+            <span class="text-[11px] font-bold tracking-wider uppercase text-sky-700 dark:text-sky-400 block leading-none">Bikini Bottom Dex</span>
+            <h1 class="text-lg font-black tracking-tight text-slate-900 dark:text-white leading-tight">比奇堡角色圖鑑</h1>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- PWA 安裝提示按鈕（當瀏覽器支援時顯示） -->
+          <button id="install-pwa-btn" type="button" class="hidden press-feedback px-2.5 py-2 rounded-2xl text-xs font-bold bg-sky-600 text-white shadow-sm flex items-center gap-1" aria-label="安裝應用程式">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3"/>
+            </svg>
+            <span>安裝</span>
+          </button>
+
+          <!-- 深色/淺色模式切換按鈕 -->
+          <button id="theme-toggle-btn" type="button" class="press-feedback w-10 h-10 rounded-2xl glass-panel bg-white/75 dark:bg-slate-800/80 border border-white/60 dark:border-slate-700/70 shadow-sm flex items-center justify-center text-slate-700 dark:text-amber-300" aria-label="切換深淺色主題">
+            <!-- 太陽圖示（深色模式時顯示） -->
+            <svg id="icon-sun" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="4"/>
+              <path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/>
+            </svg>
+            <!-- 月亮圖示（淺色模式時顯示） -->
+            <svg id="icon-moon" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 4 格角色快速切換導覽 Tab -->
+      <nav aria-label="角色選擇導覽" class="relative p-1.5 rounded-3xl glass-panel bg-white/75 dark:bg-slate-900/75 border border-white/70 dark:border-slate-800 shadow-lg">
+        <!-- 滑動 Active 指示膠囊 -->
+        <div id="tab-indicator" class="absolute top-1.5 bottom-1.5 left-1.5 rounded-2xl transition-all duration-300 ease-out shadow-md"
+             style="width: calc(25% - 6px); background-color: #eab308;"></div>
+
+        <div class="relative z-10 grid grid-cols-4 gap-1" id="tab-buttons-container">
+          <button type="button" data-index="0" class="tab-btn press-feedback py-2 px-1 rounded-2xl flex flex-col items-center justify-center gap-0.5 text-xs font-extrabold transition-colors duration-200 text-slate-900">
+            <span class="text-base leading-none">🧽</span>
+            <span class="truncate">海綿寶寶</span>
+          </button>
+          <button type="button" data-index="1" class="tab-btn press-feedback py-2 px-1 rounded-2xl flex flex-col items-center justify-center gap-0.5 text-xs font-extrabold transition-colors duration-200 text-slate-600 dark:text-slate-300">
+            <span class="text-base leading-none">🐙</span>
+            <span class="truncate">章魚哥</span>
+          </button>
+          <button type="button" data-index="2" class="tab-btn press-feedback py-2 px-1 rounded-2xl flex flex-col items-center justify-center gap-0.5 text-xs font-extrabold transition-colors duration-200 text-slate-600 dark:text-slate-300">
+            <span class="text-base leading-none">⭐</span>
+            <span class="truncate">派大星</span>
+          </button>
+          <button type="button" data-index="3" class="tab-btn press-feedback py-2 px-1 rounded-2xl flex flex-col items-center justify-center gap-0.5 text-xs font-extrabold transition-colors duration-200 text-slate-600 dark:text-slate-300">
+            <span class="text-base leading-none">🦀</span>
+            <span class="truncate">蟹老闆</span>
+          </button>
+        </div>
+      </nav>
+    </header>
+
+    <!-- 中央角色展示與檔案卡片（支援左右滑動 Swipe 手勢） -->
+    <main id="swipe-area" class="flex-1 flex flex-col justify-center my-3 z-10">
+      <article id="character-card" class="w-full rounded-[2rem] glass-panel bg-white/85 dark:bg-slate-900/85 border border-white/80 dark:border-slate-800/90 shadow-2xl overflow-hidden transition-all duration-300">
+
+        <!-- 上半部：角色專屬漸層背景 + 氣泡微動畫 + 手繪 Inline SVG 插畫 -->
+        <div id="hero-stage" class="relative w-full h-64 sm:h-72 flex items-center justify-center overflow-hidden transition-all duration-500"
+             style="background: linear-gradient(135deg, #fef08a 0%, #facc15 55%, #0284c7 100%);">
+
+          <!-- 海底氣泡動態層 -->
+          <div id="bubbles-layer" class="absolute inset-0 overflow-hidden pointer-events-none"></div>
+
+          <!-- 左上角編號徽章 -->
+          <div class="absolute top-3.5 left-4 px-3 py-1 rounded-full bg-black/20 backdrop-blur-md text-white text-xs font-extrabold tracking-wider">
+            NO. <span id="char-number">01</span> / 04
+          </div>
+
+          <!-- 右上角居住地標籤 -->
+          <div class="absolute top-3.5 right-4 px-3 py-1 rounded-full bg-white/85 dark:bg-slate-900/75 backdrop-blur-md text-slate-800 dark:text-slate-100 text-xs font-bold shadow-sm flex items-center gap-1">
+            <span id="char-home-icon">🍍</span>
+            <span id="char-home">鳳梨屋</span>
+          </div>
+
+          <!-- 純手工繪製 Inline SVG 角色主視覺插畫容器 -->
+          <div id="svg-illustration-container" class="relative z-10 w-52 h-52 sm:w-56 sm:h-56 flex items-center justify-center character-float drop-shadow-xl">
+            <!-- JS 動態注入專屬角色精緻 SVG -->
+          </div>
+
+          <!-- 底部波浪過渡遮罩 -->
+          <svg class="absolute bottom-0 left-0 w-full h-6 text-white/85 dark:text-slate-900/85 fill-current transition-colors duration-300" viewBox="0 0 1440 74" preserveAspectRatio="none">
+            <path d="M0,32 C320,80 480,0 720,32 C960,64 1120,10 1440,36 L1440,74 L0,74 Z"></path>
+          </svg>
+        </div>
+
+        <!-- 下半部：完整角色檔案與介紹文案 -->
+        <div id="card-content" class="px-5 pt-2 pb-6 space-y-4">
+          <!-- 名稱、英文原名與職業標籤 -->
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h2 id="char-name" class="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+                海綿寶寶
+              </h2>
+              <p id="char-en-name" class="text-xs sm:text-sm font-bold tracking-wide text-slate-500 dark:text-slate-400 mt-0.5">
+                SpongeBob SquarePants
+              </p>
+            </div>
+            <span id="char-role-badge" class="px-3.5 py-1.5 rounded-2xl text-xs font-extrabold shadow-sm transition-colors duration-300 bg-yellow-400 text-slate-950">
+              蟹堡王油炸廚師
+            </span>
+          </div>
+
+          <!-- 性格關鍵字膠囊 -->
+          <div id="char-traits" class="flex flex-wrap gap-1.5">
+            <!-- JS 動態渲染性格標籤 -->
+          </div>
+
+          <!-- 完整角色介紹文案區塊 -->
+          <div class="p-4 rounded-2xl bg-slate-100/85 dark:bg-slate-800/75 border border-slate-200/70 dark:border-slate-700/60">
+            <p id="char-description" class="text-[15px] leading-relaxed font-medium text-slate-700 dark:text-slate-200 text-justify">
+              他是一隻充滿活力且樂觀的海綿，居住在海底的鳳梨屋中，並與多位海洋朋友共同生活。海綿寶寶對生活抱持著孩童般的熱情，這也延伸到他在速食餐廳蟹堡王擔任油炸廚師的工作。
+            </p>
+          </div>
+        </div>
+      </article>
+    </main>
+
+    <!-- 底部手勢提示與快速上一位/下一位切換按鈕 -->
+    <footer class="w-full z-20 flex items-center justify-between gap-3 pt-1">
+      <button id="prev-btn" type="button" class="press-feedback flex-1 py-3 px-4 rounded-2xl glass-panel bg-white/80 dark:bg-slate-900/80 border border-white/70 dark:border-slate-800 shadow-md flex items-center justify-center gap-1.5 text-sm font-extrabold text-slate-700 dark:text-slate-200">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+        </svg>
+        <span>上一位</span>
+      </button>
+
+      <!-- 圓點分頁指示器 -->
+      <div class="flex items-center gap-1.5 px-2" id="dots-indicator">
+        <span class="dot w-2.5 h-2.5 rounded-full transition-all duration-300 bg-yellow-500 scale-125"></span>
+        <span class="dot w-2 h-2 rounded-full transition-all duration-300 bg-slate-400/50"></span>
+        <span class="dot w-2 h-2 rounded-full transition-all duration-300 bg-slate-400/50"></span>
+        <span class="dot w-2 h-2 rounded-full transition-all duration-300 bg-slate-400/50"></span>
+      </div>
+
+      <button id="next-btn" type="button" class="press-feedback flex-1 py-3 px-4 rounded-2xl shadow-md flex items-center justify-center gap-1.5 text-sm font-extrabold text-slate-950 transition-colors duration-300 bg-yellow-400">
+        <span>下一位</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </footer>
+  </div>
+
+  <script>
+    /**
+     * ============================================================================
+     * 1. PWA 核心規範實作：動態產生 App Icon Data URI、Manifest Blob URL 與 Service Worker
+     * ============================================================================
+     */
+    (function initPWA() {
+      // 極簡可愛的「海綿寶寶黃色方塊笑臉」SVG 圖示
+      const appIconSvg = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+          <defs>
+            <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#38bdf8"/>
+              <stop offset="100%" stop-color="#0284c7"/>
+            </linearGradient>
+          </defs>
+          <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+          <rect x="86" y="76" width="340" height="310" rx="54" fill="#facc15" stroke="#854d0e" stroke-width="14"/>
+          <circle cx="135" cy="130" r="18" fill="#ca8a04" opacity="0.55"/>
+          <circle cx="375" cy="145" r="14" fill="#ca8a04" opacity="0.55"/>
+          <circle cx="128" cy="320" r="15" fill="#ca8a04" opacity="0.55"/>
+          <circle cx="380" cy="310" r="18" fill="#ca8a04" opacity="0.55"/>
+          <circle cx="205" cy="205" r="42" fill="#ffffff" stroke="#1e293b" stroke-width="10"/>
+          <circle cx="307" cy="205" r="42" fill="#ffffff" stroke="#1e293b" stroke-width="10"/>
+          <circle cx="212" cy="205" r="17" fill="#0284c7"/>
+          <circle cx="300" cy="205" r="17" fill="#0284c7"/>
+          <circle cx="216" cy="200" r="6" fill="#ffffff"/>
+          <circle cx="304" cy="200" r="6" fill="#ffffff"/>
+          <path d="M175 278 Q256 342 337 278" fill="none" stroke="#1e293b" stroke-width="14" stroke-linecap="round"/>
+          <rect x="224" y="302" width="26" height="28" rx="5" fill="#ffffff" stroke="#1e293b" stroke-width="8"/>
+          <rect x="262" y="302" width="26" height="28" rx="5" fill="#ffffff" stroke="#1e293b" stroke-width="8"/>
+          <rect x="86" y="354" width="340" height="44" rx="12" fill="#ffffff" stroke="#1e293b" stroke-width="10"/>
+          <polygon points="256,360 238,395 256,435 274,395" fill="#ef4444" stroke="#1e293b" stroke-width="8"/>
+        </svg>
+      `.trim();
+
+      const iconDataUri = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(appIconSvg);
+
+      // 動態注入 favicon 與 apple-touch-icon
+      const linkIcon = document.createElement("link");
+      linkIcon.rel = "icon";
+      linkIcon.type = "image/svg+xml";
+      linkIcon.href = iconDataUri;
+      document.head.appendChild(linkIcon);
+
+      const appleIcon = document.createElement("link");
+      appleIcon.rel = "apple-touch-icon";
+      appleIcon.href = iconDataUri;
+      document.head.appendChild(appleIcon);
+
+      // 動態產生 Web App Manifest Blob URL
+      const manifestData = {
+        name: "比奇堡角色圖鑑 Pro",
+        short_name: "海綿寶寶圖鑑",
+        description: "比奇堡經典角色互動圖鑑，支援離線瀏覽與原生滑動手勢體驗。",
+        display: "standalone",
+        orientation: "portrait",
+        start_url: "./",
+        background_color: "#0284c7",
+        theme_color: "#eab308",
+        icons: [
+          {
+            src: iconDataUri,
+            sizes: "512x512",
+            type: "image/svg+xml",
+            purpose: "any maskable"
+          }
+        ]
+      };
+
+      const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: "application/manifest+json" });
+      const manifestUrl = URL.createObjectURL(manifestBlob);
+      const manifestLink = document.createElement("link");
+      manifestLink.rel = "manifest";
+      manifestLink.href = manifestUrl;
+      document.head.appendChild(manifestLink);
+
+      // 動態註冊內聯 Service Worker 實現離線快取
+      if ("serviceWorker" in navigator) {
+        const swCode = `
+          const CACHE_NAME = 'bikini-bottom-dex-v1';
+          self.addEventListener('install', (event) => {
+            self.skipWaiting();
+            event.waitUntil(
+              caches.open(CACHE_NAME).then((cache) => {
+                return cache.addAll(['./']).catch(() => {});
+              })
+            );
+          });
+          self.addEventListener('activate', (event) => {
+            event.waitUntil(self.clients.claim());
+          });
+          self.addEventListener('fetch', (event) => {
+            if (event.request.method !== 'GET') return;
+            event.respondWith(
+              caches.match(event.request).then((cachedResponse) => {
+                const fetchPromise = fetch(event.request).then((networkResponse) => {
+                  if (networkResponse && networkResponse.status === 200) {
+                    const responseClone = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                      cache.put(event.request, responseClone);
+                    });
+                  }
+                  return networkResponse;
+                }).catch(() => cachedResponse);
+                return cachedResponse || fetchPromise;
+              })
+            );
+          });
+        `;
+        try {
+          const swBlob = new Blob([swCode], { type: "application/javascript" });
+          const swUrl = URL.createObjectURL(swBlob);
+          navigator.serviceWorker.register(swUrl).catch(() => {
+            // 預覽沙盒環境若限制 Blob SW 註冊則靜默降級，不影響主功能
+          });
+        } catch (e) {}
+      }
+
+      // 監聽 PWA 安裝提示事件
+      let deferredPrompt = null;
+      const installBtn = document.getElementById("install-pwa-btn");
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (installBtn) installBtn.classList.remove("hidden");
+      });
+
+      if (installBtn) {
+        installBtn.addEventListener("click", async () => {
+          if (!deferredPrompt) return;
+          deferredPrompt.prompt();
+          await deferredPrompt.userChoice;
+          deferredPrompt = null;
+          installBtn.classList.add("hidden");
+        });
+      }
+    })();
+
+    /**
+     * ============================================================================
+     * 2. 四位經典角色資料與純手工繪製 Inline SVG 矢量插畫
+     * ============================================================================
+     */
+    const CHARACTERS = [
+      {
+        id: "spongebob",
+        number: "01",
+        name: "海綿寶寶",
+        enName: "SpongeBob SquarePants",
+        role: "蟹堡王油炸廚師",
+        home: "鳳梨屋",
+        homeIcon: "🍍",
+        traits: ["活力充沛", "極度樂觀", "美味蟹堡達人", "抓水母高手"],
+        description:
+          "他是一隻充滿活力且樂觀的海綿，居住在海底的鳳梨屋中，並與多位海洋朋友共同生活。海綿寶寶對生活抱持著孩童般的熱情，這也延伸到他在速食餐廳蟹堡王擔任油炸廚師的工作。",
+        theme: {
+          primaryHex: "#eab308",
+          btnBgClass: "bg-yellow-400",
+          btnTextClass: "text-slate-950",
+          stageGradient: "linear-gradient(135deg, #fef08a 0%, #facc15 52%, #0284c7 100%)",
+          ambientGlow: "radial-gradient(circle at 50% 18%, rgba(250, 204, 21, 0.5), transparent 62%), linear-gradient(180deg, rgba(14, 165, 233, 0.25) 0%, rgba(2, 132, 199, 0.08) 100%)"
+        },
+        svg: `
+          <svg viewBox="0 0 240 240" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <!-- 陰影 -->
+            <ellipse cx="120" cy="222" rx="54" ry="9" fill="rgba(0,0,0,0.18)"/>
+            <!-- 雙腿與黑皮鞋 -->
+            <rect x="92" y="176" width="8" height="28" rx="4" fill="#FACC15" stroke="#713F12" stroke-width="2.5"/>
+            <rect x="140" y="176" width="8" height="28" rx="4" fill="#FACC15" stroke="#713F12" stroke-width="2.5"/>
+            <!-- 襪子條紋 -->
+            <rect x="92" y="188" width="8" height="12" fill="#FFFFFF" stroke="#713F12" stroke-width="2"/>
+            <line x1="92" y1="192" x2="100" y2="192" stroke="#2563EB" stroke-width="2"/>
+            <line x1="92" y1="196" x2="100" y2="196" stroke="#EF4444" stroke-width="2"/>
+            <rect x="140" y="188" width="8" height="12" fill="#FFFFFF" stroke="#713F12" stroke-width="2"/>
+            <line x1="140" y1="192" x2="148" y2="192" stroke="#2563EB" stroke-width="2"/>
+            <line x1="140" y1="196" x2="148" y2="196" stroke="#EF4444" stroke-width="2"/>
+            <!-- 黑皮鞋 -->
+            <path d="M76 206 C76 198, 102 198, 102 208 L102 214 L74 214 Z" fill="#1E293B"/>
+            <circle cx="83" cy="205" r="2.5" fill="#94A3B8"/>
+            <path d="M138 208 C138 198, 164 198, 164 206 L166 214 L138 214 Z" fill="#1E293B"/>
+            <circle cx="157" cy="205" r="2.5" fill="#94A3B8"/>
+            <!-- 左手揮手 -->
+            <path d="M62 126 Q34 110 28 88" fill="none" stroke="#FACC15" stroke-width="8" stroke-linecap="round"/>
+            <circle cx="27" cy="85" r="7" fill="#FACC15" stroke="#713F12" stroke-width="2.5"/>
+            <path d="M55 119 L68 124 L63 135 L50 130 Z" fill="#FFFFFF" stroke="#1E293B" stroke-width="2.5"/>
+            <!-- 右手插腰 -->
+            <path d="M178 126 Q204 138 188 156" fill="none" stroke="#FACC15" stroke-width="8" stroke-linecap="round"/>
+            <circle cx="186" cy="157" r="7" fill="#FACC15" stroke="#713F12" stroke-width="2.5"/>
+            <path d="M172 124 L185 119 L190 130 L177 135 Z" fill="#FFFFFF" stroke="#1E293B" stroke-width="2.5"/>
+            <!-- 海綿波浪方塊身體 -->
+            <path d="M62 42 Q76 34 90 42 Q105 34 120 42 Q135 34 150 42 Q164 34 178 42 Q184 62 178 82 Q184 102 178 122 Q182 140 176 154 L64 154 Q58 140 62 122 Q56 102 62 82 Q56 62 62 42 Z"
+                  fill="#FACC15" stroke="#854D0E" stroke-width="3.5" stroke-linejoin="round"/>
+            <!-- 海綿孔洞 -->
+            <circle cx="76" cy="58" r="6" fill="#CA8A04" opacity="0.55"/>
+            <circle cx="164" cy="60" r="5.5" fill="#CA8A04" opacity="0.55"/>
+            <circle cx="74" cy="116" r="5" fill="#CA8A04" opacity="0.55"/>
+            <circle cx="165" cy="114" r="6" fill="#CA8A04" opacity="0.55"/>
+            <circle cx="120" cy="50" r="4" fill="#CA8A04" opacity="0.45"/>
+            <!-- 白色襯衫與棕色方褲 -->
+            <rect x="64" y="138" width="112" height="18" fill="#FFFFFF" stroke="#1E293B" stroke-width="3"/>
+            <rect x="64" y="156" width="112" height="22" rx="4" fill="#78350F" stroke="#1E293B" stroke-width="3"/>
+            <!-- 黑色皮帶虛線 -->
+            <line x1="70" y1="163" x2="84" y2="163" stroke="#0F172A" stroke-width="4" stroke-linecap="round"/>
+            <line x1="94" y1="163" x2="108" y2="163" stroke="#0F172A" stroke-width="4" stroke-linecap="round"/>
+            <line x1="132" y1="163" x2="146" y2="163" stroke="#0F172A" stroke-width="4" stroke-linecap="round"/>
+            <line x1="156" y1="163" x2="170" y2="163" stroke="#0F172A" stroke-width="4" stroke-linecap="round"/>
+            <!-- 領子與經典紅領帶 -->
+            <polygon points="98,138 112,138 105,149" fill="#FFFFFF" stroke="#1E293B" stroke-width="2.5"/>
+            <polygon points="128,138 142,138 135,149" fill="#FFFFFF" stroke="#1E293B" stroke-width="2.5"/>
+            <polygon points="120,140 112,155 120,173 128,155" fill="#EF4444" stroke="#1E293B" stroke-width="2.5" stroke-linejoin="round"/>
+            <!-- 睫毛 -->
+            <line x1="92" y1="64" x2="88" y2="55" stroke="#1E293B" stroke-width="3" stroke-linecap="round"/>
+            <line x1="101" y1="62" x2="101" y2="52" stroke="#1E293B" stroke-width="3" stroke-linecap="round"/>
+            <line x1="110" y1="64" x2="114" y2="55" stroke="#1E293B" stroke-width="3" stroke-linecap="round"/>
+            <line x1="130" y1="64" x2="126" y2="55" stroke="#1E293B" stroke-width="3" stroke-linecap="round"/>
+            <line x1="139" y1="62" x2="139" y2="52" stroke="#1E293B" stroke-width="3" stroke-linecap="round"/>
+            <line x1="148" y1="64" x2="152" y2="55" stroke="#1E293B" stroke-width="3" stroke-linecap="round"/>
+            <!-- 大眼睛 -->
+            <circle cx="101" cy="80" r="18" fill="#FFFFFF" stroke="#1E293B" stroke-width="3"/>
+            <circle cx="139" cy="80" r="18" fill="#FFFFFF" stroke="#1E293B" stroke-width="3"/>
+            <circle cx="105" cy="80" r="8.5" fill="#0EA5E9" stroke="#1E293B" stroke-width="2"/>
+            <circle cx="135" cy="80" r="8.5" fill="#0EA5E9" stroke="#1E293B" stroke-width="2"/>
+            <circle cx="105" cy="80" r="4.5" fill="#0F172A"/>
+            <circle cx="135" cy="80" r="4.5" fill="#0F172A"/>
+            <circle cx="107" cy="77" r="2.2" fill="#FFFFFF"/>
+            <circle cx="137" cy="77" r="2.2" fill="#FFFFFF"/>
+            <!-- 腮紅與雀斑 -->
+            <circle cx="82" cy="100" r="7" fill="#FB7185" opacity="0.55"/>
+            <circle cx="158" cy="100" r="7" fill="#FB7185" opacity="0.55"/>
+            <circle cx="80" cy="98" r="1.5" fill="#B91C1C"/>
+            <circle cx="85" cy="101" r="1.5" fill="#B91C1C"/>
+            <circle cx="160" cy="98" r="1.5" fill="#B91C1C"/>
+            <circle cx="155" cy="101" r="1.5" fill="#B91C1C"/>
+            <!-- 立體長鼻子 -->
+            <path d="M117 92 Q128 84 130 96 Q131 105 117 102" fill="#FACC15" stroke="#854D0E" stroke-width="2.8" stroke-linecap="round"/>
+            <!-- 開心大笑與兩顆門牙 -->
+            <path d="M86 108 Q120 134 154 108" fill="none" stroke="#1E293B" stroke-width="3.2" stroke-linecap="round"/>
+            <rect x="108" y="119" width="10" height="12" rx="2" fill="#FFFFFF" stroke="#1E293B" stroke-width="2.5"/>
+            <rect x="122" y="119" width="10" height="12" rx="2" fill="#FFFFFF" stroke="#1E293B" stroke-width="2.5"/>
+          </svg>
+        `
+      },
+      {
+        id: "squidward",
+        number: "02",
+        name: "章魚哥",
+        enName: "Squidward Tentacles",
+        role: "蟹堡王收銀員 / 藝術家",
+        home: "摩艾石像屋",
+        homeIcon: "🗿",
+        traits: ["玩世不恭", "單簧管演奏", "自畫像畫家", "厭世收銀員"],
+        description:
+          "章魚哥是一隻脾氣暴躁、玩世不恭的章魚，住在復活節島摩艾石像造型的房屋中。他厭惡自己在蟹堡王擔任收銀員的工作，平時喜歡吹單簧管與畫自畫像。他經常被海綿寶寶與派大星的行為惹惱；兩人並未察覺章魚哥對他們的反感，但在必要時仍能合作無間。",
+        theme: {
+          primaryHex: "#14b8a6",
+          btnBgClass: "bg-teal-400",
+          btnTextClass: "text-slate-950",
+          stageGradient: "linear-gradient(135deg, #99f6e4 0%, #2dd4bf 50%, #0f766e 100%)",
+          ambientGlow: "radial-gradient(circle at 50% 18%, rgba(45, 212, 191, 0.48), transparent 62%), linear-gradient(180deg, rgba(13, 148, 136, 0.25) 0%, rgba(15, 118, 110, 0.08) 100%)"
+        },
+        svg: `
+          <svg viewBox="0 0 240 240" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <!-- 陰影 -->
+            <ellipse cx="120" cy="222" rx="52" ry="9" fill="rgba(0,0,0,0.18)"/>
+            <!-- 四條章魚觸手腳 -->
+            <path d="M98 164 Q90 192 80 212 Q88 216 96 210 Q104 190 108 164 Z" fill="#7DD3C0" stroke="#115E59" stroke-width="2.5"/>
+            <path d="M110 164 Q106 194 102 214 Q110 217 116 211 Q118 190 118 164 Z" fill="#7DD3C0" stroke="#115E59" stroke-width="2.5"/>
+            <path d="M122 164 Q122 190 124 211 Q130 217 138 214 Q134 194 130 164 Z" fill="#7DD3C0" stroke="#115E59" stroke-width="2.5"/>
+            <path d="M132 164 Q136 190 144 210 Q152 216 160 212 Q150 192 142 164 Z" fill="#7DD3C0" stroke="#115E59" stroke-width="2.5"/>
+            <!-- 抱胸雙臂 -->
+            <path d="M88 124 Q64 134 78 150 Q105 156 135 148" fill="none" stroke="#7DD3C0" stroke-width="10" stroke-linecap="round"/>
+            <path d="M152 124 Q176 134 162 150 Q135 156 105 148" fill="none" stroke="#7DD3C0" stroke-width="10" stroke-linecap="round"/>
+            <!-- 經典棕色 Polo 衫 -->
+            <path d="M94 114 L146 114 L154 164 L86 164 Z" fill="#B45309" stroke="#451A03" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M104 114 L120 128 L136 114" fill="none" stroke="#451A03" stroke-width="2.5"/>
+            <!-- 細長脖子 -->
+            <rect x="111" y="96" width="18" height="22" fill="#7DD3C0" stroke="#115E59" stroke-width="2.8"/>
+            <!-- 藍綠色大光頭 -->
+            <path d="M74 52 C74 20, 166 20, 166 52 C166 74, 152 84, 144 92 C148 102, 138 110, 120 110 C102 110, 92 102, 96 92 C88 84, 74 74, 74 52 Z"
+                  fill="#7DD3C0" stroke="#115E59" stroke-width="3.2"/>
+            <!-- 額頭皺紋 -->
+            <path d="M102 36 Q120 33 138 36" fill="none" stroke="#0F766E" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M108 42 Q120 40 132 42" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round"/>
+            <!-- 黃色半睜厭世大眼 -->
+            <ellipse cx="106" cy="64" rx="13" ry="16" fill="#FEF08A" stroke="#115E59" stroke-width="2.8"/>
+            <ellipse cx="134" cy="64" rx="13" ry="16" fill="#FEF08A" stroke="#115E59" stroke-width="2.8"/>
+            <!-- 紅色方形瞳孔 -->
+            <rect x="103" y="61" width="6" height="8" rx="1.5" fill="#991B1B"/>
+            <rect x="131" y="61" width="6" height="8" rx="1.5" fill="#991B1B"/>
+            <!-- 沉重眼皮（無奈神情關鍵） -->
+            <path d="M93 61 L119 63 L119 48 C110 46, 98 48, 93 61 Z" fill="#5EEAD4" stroke="#115E59" stroke-width="2.5"/>
+            <path d="M121 63 L147 61 C142 48, 130 46, 121 48 Z" fill="#5EEAD4" stroke="#115E59" stroke-width="2.5"/>
+            <!-- 經典下垂大鼻子 -->
+            <path d="M113 72 C106 86, 106 106, 120 106 C134 106, 134 86, 127 72"
+                  fill="#7DD3C0" stroke="#115E59" stroke-width="3" stroke-linecap="round"/>
+            <!-- 撇嘴無奈表情 -->
+            <path d="M96 98 Q120 90 144 98" fill="none" stroke="#115E59" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        `
+      },
+      {
+        id: "patrick",
+        number: "03",
+        name: "派大星",
+        enName: "Patrick Star",
+        role: "比奇堡無業哲學家",
+        home: "大石頭下",
+        homeIcon: "🪨",
+        traits: ["憨厚友善", "大智若愚", "海綿寶寶死黨", "冰淇淋愛好者"],
+        description:
+          "派大星，一隻遲鈍但友善的粉紅色海星，住在岩石下。派大星自認相當聰明，而對自己愚蠢的無知正是其性格特徵之一。",
+        theme: {
+          primaryHex: "#f43f5e",
+          btnBgClass: "bg-rose-400",
+          btnTextClass: "text-slate-950",
+          stageGradient: "linear-gradient(135deg, #fecdd3 0%, #fb7185 52%, #84cc16 100%)",
+          ambientGlow: "radial-gradient(circle at 50% 18%, rgba(251, 113, 133, 0.5), transparent 62%), linear-gradient(180deg, rgba(163, 230, 53, 0.22) 0%, rgba(244, 63, 94, 0.08) 100%)"
+        },
+        svg: `
+          <svg viewBox="0 0 240 240" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <!-- 陰影 -->
+            <ellipse cx="120" cy="222" rx="62" ry="10" fill="rgba(0,0,0,0.18)"/>
+            <!-- 粉紅海星五角身體（含頭頂、雙手、雙腳） -->
+            <path d="M120 24
+                     C134 24, 144 68, 154 94
+                     C178 96, 206 102, 208 116
+                     C210 130, 182 142, 166 150
+                     C172 174, 174 208, 156 212
+                     C140 216, 130 192, 120 186
+                     C110 192, 100 216, 84 212
+                     C66 208, 68 174, 74 150
+                     C58 142, 30 130, 32 116
+                     C34 102, 62 96, 86 94
+                     C96 68, 106 24, 120 24 Z"
+                  fill="#FDA4AF" stroke="#9F1239" stroke-width="3.5" stroke-linejoin="round"/>
+            <!-- 綠紫花褲衩 -->
+            <path d="M72 148 Q120 158 168 148 L172 184 L126 184 L120 176 L114 184 L68 184 Z"
+                  fill="#A3E635" stroke="#365314" stroke-width="3" stroke-linejoin="round"/>
+            <!-- 褲衩上的紫色花朵圖案 -->
+            <path d="M84 162 C88 156, 96 158, 94 166 C100 170, 94 178, 88 174 C82 178, 78 170, 84 162 Z" fill="#9333EA"/>
+            <path d="M144 160 C150 155, 158 160, 154 168 C158 174, 150 178, 145 173 C138 176, 136 166, 144 160 Z" fill="#9333EA"/>
+            <circle cx="120" cy="166" r="5" fill="#9333EA"/>
+            <!-- 可愛肚臍 -->
+            <path d="M115 138 Q120 142 125 138" fill="none" stroke="#9F1239" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- 粗黑呆萌眉毛 -->
+            <path d="M96 66 L112 72" stroke="#1E293B" stroke-width="4" stroke-linecap="round"/>
+            <path d="M144 66 L128 72" stroke="#1E293B" stroke-width="4" stroke-linecap="round"/>
+            <!-- 貼在一起的橢圓大眼睛 -->
+            <ellipse cx="109" cy="84" rx="11" ry="15" fill="#FFFFFF" stroke="#1E293B" stroke-width="2.8"/>
+            <ellipse cx="131" cy="84" rx="11" ry="15" fill="#FFFFFF" stroke="#1E293B" stroke-width="2.8"/>
+            <circle cx="111" cy="85" r="4.5" fill="#0F172A"/>
+            <circle cx="129" cy="85" r="4.5" fill="#0F172A"/>
+            <circle cx="112" cy="83" r="1.5" fill="#FFFFFF"/>
+            <circle cx="130" cy="83" r="1.5" fill="#FFFFFF"/>
+            <!-- 傻笑大嘴巴與粉紅舌頭 -->
+            <path d="M96 108 Q120 132 144 108 Q120 116 96 108 Z" fill="#881337" stroke="#1E293B" stroke-width="2.8" stroke-linejoin="round"/>
+            <path d="M108 117 Q120 112 132 117 Q120 126 108 117 Z" fill="#FB7185"/>
+            <!-- 身上小雀斑點綴 -->
+            <circle cx="120" cy="46" r="2.2" fill="#E11D48" opacity="0.6"/>
+            <circle cx="84" cy="116" r="2.2" fill="#E11D48" opacity="0.6"/>
+            <circle cx="156" cy="116" r="2.2" fill="#E11D48" opacity="0.6"/>
+          </svg>
+        `
+      },
+      {
+        id: "krabs",
+        number: "04",
+        name: "蟹老闆",
+        enName: "Eugene H. Krabs",
+        role: "蟹堡王餐廳老闆",
+        home: "船錨屋",
+        homeIcon: "⚓",
+        traits: ["愛錢如命", "蟹堡王創辦人", "珍珍的父親", "精打細算"],
+        description:
+          "蟹老闆是一隻極度貪財的紅色螃蟹，也是蟹堡王的老闆。儘管愛錢如命，他常對海綿寶寶扮演父親般的角色。他是一名單親家長，育有一名灰色抹香鯨少女女兒珍珍，而珍珍對繼承家族事業毫無興趣。",
+        theme: {
+          primaryHex: "#ef4444",
+          btnBgClass: "bg-red-500",
+          btnTextClass: "text-white",
+          stageGradient: "linear-gradient(135deg, #fca5a5 0%, #ef4444 52%, #1d4ed8 100%)",
+          ambientGlow: "radial-gradient(circle at 50% 18%, rgba(239, 68, 68, 0.48), transparent 62%), linear-gradient(180deg, rgba(37, 99, 235, 0.24) 0%, rgba(239, 68, 68, 0.08) 100%)"
+        },
+        svg: `
+          <svg viewBox="0 0 240 240" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <!-- 陰影 -->
+            <ellipse cx="120" cy="222" rx="58" ry="9" fill="rgba(0,0,0,0.18)"/>
+            <!-- 尖尖蟹腳 -->
+            <polygon points="88,176 98,176 92,216" fill="#EF4444" stroke="#7F1D1D" stroke-width="2.5" stroke-linejoin="round"/>
+            <polygon points="142,176 152,176 148,216" fill="#EF4444" stroke="#7F1D1D" stroke-width="2.5" stroke-linejoin="round"/>
+            <!-- 左側紅色大螯 -->
+            <path d="M74 128 Q48 118 44 96" fill="none" stroke="#EF4444" stroke-width="9" stroke-linecap="round"/>
+            <path d="M44 98 C24 94, 22 64, 42 54 L46 74 L58 56 C74 68, 68 96, 44 98 Z"
+                  fill="#EF4444" stroke="#7F1D1D" stroke-width="3" stroke-linejoin="round"/>
+            <!-- 右側紅色大螯（拿著閃亮金幣） -->
+            <path d="M166 128 Q192 118 196 96" fill="none" stroke="#EF4444" stroke-width="9" stroke-linecap="round"/>
+            <path d="M196 98 C216 94, 218 64, 198 54 L194 74 L182 56 C166 68, 172 96, 196 98 Z"
+                  fill="#EF4444" stroke="#7F1D1D" stroke-width="3" stroke-linejoin="round"/>
+            <!-- 閃亮金幣 -->
+            <circle cx="195" cy="52" r="14" fill="#FACC15" stroke="#854D0E" stroke-width="2.5"/>
+            <text x="195" y="57" text-anchor="middle" font-size="15" font-weight="900" fill="#854D0E">$</text>
+            <!-- 高聳眼柄 -->
+            <rect x="98" y="34" width="12" height="46" rx="6" fill="#EF4444" stroke="#7F1D1D" stroke-width="3"/>
+            <rect x="130" y="34" width="12" height="46" rx="6" fill="#EF4444" stroke="#7F1D1D" stroke-width="3"/>
+            <!-- 眼柄頂端鋸齒睫毛 -->
+            <polyline points="96,34 100,26 104,34 108,26 112,34" fill="none" stroke="#7F1D1D" stroke-width="2.5" stroke-linejoin="round"/>
+            <polyline points="128,34 132,26 136,34 140,26 144,34" fill="none" stroke="#7F1D1D" stroke-width="2.5" stroke-linejoin="round"/>
+            <!-- 眼睛 -->
+            <ellipse cx="104" cy="52" rx="7" ry="12" fill="#FFFFFF" stroke="#1E293B" stroke-width="2.2"/>
+            <ellipse cx="136" cy="52" rx="7" ry="12" fill="#FFFFFF" stroke="#1E293B" stroke-width="2.2"/>
+            <circle cx="104" cy="52" r="3.5" fill="#0F172A"/>
+            <circle cx="136" cy="52" r="3.5" fill="#0F172A"/>
+            <!-- 螃蟹紅色頭部與尖鼻子 -->
+            <ellipse cx="120" cy="96" rx="48" ry="26" fill="#EF4444" stroke="#7F1D1D" stroke-width="3.2"/>
+            <path d="M114 82 L120 66 L126 82" fill="#EF4444" stroke="#7F1D1D" stroke-width="2.8" stroke-linejoin="round"/>
+            <!-- 得意露齒大笑 -->
+            <path d="M86 98 Q120 118 154 98 Q120 106 86 98 Z" fill="#FFFFFF" stroke="#1E293B" stroke-width="2.5" stroke-linejoin="round"/>
+            <line x1="104" y1="101" x2="104" y2="108" stroke="#1E293B" stroke-width="2"/>
+            <line x1="120" y1="102" x2="120" y2="110" stroke="#1E293B" stroke-width="2"/>
+            <line x1="136" y1="101" x2="136" y2="108" stroke="#1E293B" stroke-width="2"/>
+            <!-- 淺藍色襯衫與藍紫色長褲 -->
+            <path d="M74 114 L166 114 L172 154 L68 154 Z" fill="#7DD3FC" stroke="#0369A1" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M68 154 L172 154 L166 180 L74 180 Z" fill="#4338CA" stroke="#1E1B4B" stroke-width="3" stroke-linejoin="round"/>
+            <!-- 金色皮帶扣 -->
+            <rect x="68" y="150" width="104" height="8" fill="#0F172A"/>
+            <rect x="110" y="148" width="20" height="12" rx="2" fill="#FACC15" stroke="#854D0E" stroke-width="2"/>
+          </svg>
+        `
+      }
+    ];
+
+    /**
+     * ============================================================================
+     * 3. 應用程式狀態管理與 LocalStorage 記憶還原
+     * ============================================================================
+     */
+    const STORAGE_KEYS = {
+      CHAR_INDEX: "bikini_bottom_last_char_index",
+      DARK_MODE: "bikini_bottom_dark_mode"
+    };
+
+    let currentIndex = 0;
+    let isDarkMode = false;
+
+    // 讀取使用者先前的偏好設定
+    function loadSavedPreferences() {
+      try {
+        const savedIndex = localStorage.getItem(STORAGE_KEYS.CHAR_INDEX);
+        if (savedIndex !== null) {
+          const parsed = parseInt(savedIndex, 10);
+          if (!isNaN(parsed) && parsed >= 0 && parsed < CHARACTERS.length) {
+            currentIndex = parsed;
+          }
+        }
+
+        const savedTheme = localStorage.getItem(STORAGE_KEYS.DARK_MODE);
+        if (savedTheme !== null) {
+          isDarkMode = savedTheme === "true";
+        } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+          isDarkMode = true;
+        }
+      } catch (e) {}
+    }
+
+    function applyThemeMode(dark) {
+      isDarkMode = dark;
+      const htmlEl = document.documentElement;
+      if (dark) {
+        htmlEl.classList.add("dark");
+      } else {
+        htmlEl.classList.remove("dark");
+      }
+      try {
+        localStorage.setItem(STORAGE_KEYS.DARK_MODE, String(dark));
+      } catch (e) {}
+    }
+
+    /**
+     * ============================================================================
+     * 4. UI 渲染、氣泡微動畫產生與角色切換控制
+     * ============================================================================
+     */
+    function generateBubbles() {
+      const container = document.getElementById("bubbles-layer");
+      if (!container) return;
+      container.innerHTML = "";
+      const bubbleConfigs = [
+        { left: "12%", size: 14, dur: "4.8s", delay: "0s" },
+        { left: "26%", size: 9, dur: "3.9s", delay: "1.2s" },
+        { left: "44%", size: 16, dur: "5.4s", delay: "2.1s" },
+        { left: "68%", size: 11, dur: "4.2s", delay: "0.7s" },
+        { left: "82%", size: 15, dur: "5.0s", delay: "1.8s" },
+        { left: "90%", size: 8, dur: "3.6s", delay: "2.8s" }
+      ];
+
+      bubbleConfigs.forEach((b) => {
+        const el = document.createElement("span");
+        el.className = "bubble";
+        el.style.left = b.left;
+        el.style.bottom = "-20px";
+        el.style.width = `${b.size}px`;
+        el.style.height = `${b.size}px`;
+        el.style.setProperty("--dur", b.dur);
+        el.style.setProperty("--delay", b.delay);
+        container.appendChild(el);
+      });
+    }
+
+    function renderCharacter(index, triggerAnimation = true) {
+      currentIndex = (index + CHARACTERS.length) % CHARACTERS.length;
+      const char = CHARACTERS[currentIndex];
+
+      // 儲存最新瀏覽的角色索引
+      try {
+        localStorage.setItem(STORAGE_KEYS.CHAR_INDEX, String(currentIndex));
+      } catch (e) {}
+
+      // 更新動態主題光暈與 meta theme-color
+      const ambientBg = document.getElementById("ambient-bg");
+      if (ambientBg) ambientBg.style.background = char.theme.ambientGlow;
+
+      const metaTheme = document.getElementById("meta-theme-color");
+      if (metaTheme) metaTheme.setAttribute("content", char.theme.primaryHex);
+
+      // 更新頂部 Tab 指示器位置與顏色
+      const indicator = document.getElementById("tab-indicator");
+      if (indicator) {
+        indicator.style.left = `calc(${currentIndex * 25}% + 6px)`;
+        indicator.style.backgroundColor = char.theme.primaryHex;
+      }
+
+      const tabButtons = document.querySelectorAll(".tab-btn");
+      tabButtons.forEach((btn, idx) => {
+        if (idx === currentIndex) {
+          btn.classList.remove("text-slate-600", "dark:text-slate-300", "text-slate-900", "text-white");
+          btn.classList.add(char.theme.btnTextClass);
+        } else {
+          btn.classList.remove("text-slate-900", "text-slate-950", "text-white");
+          btn.classList.add("text-slate-600", "dark:text-slate-300");
+        }
+      });
+
+      // 更新主視覺漸層與 SVG 插畫
+      const heroStage = document.getElementById("hero-stage");
+      if (heroStage) heroStage.style.background = char.theme.stageGradient;
+
+      const svgContainer = document.getElementById("svg-illustration-container");
+      if (svgContainer) svgContainer.innerHTML = char.svg;
+
+      // 更新角色資訊文字
+      document.getElementById("char-number").textContent = char.number;
+      document.getElementById("char-home-icon").textContent = char.homeIcon;
+      document.getElementById("char-home").textContent = char.home;
+      document.getElementById("char-name").textContent = char.name;
+      document.getElementById("char-en-name").textContent = char.enName;
+      document.getElementById("char-description").textContent = char.description;
+
+      // 更新職業標籤樣式
+      const roleBadge = document.getElementById("char-role-badge");
+      roleBadge.textContent = char.role;
+      roleBadge.className = `px-3.5 py-1.5 rounded-2xl text-xs font-extrabold shadow-sm transition-colors duration-300 ${char.theme.btnBgClass} ${char.theme.btnTextClass}`;
+
+      // 更新性格關鍵字標籤
+      const traitsContainer = document.getElementById("char-traits");
+      traitsContainer.innerHTML = char.traits
+        .map(
+          (trait) =>
+            `<span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-200/75 dark:bg-slate-800 text-slate-700 dark:text-slate-300"># ${trait}</span>`
+        )
+        .join("");
+
+      // 更新底部圓點與「下一位」按鈕顏色
+      const dots = document.querySelectorAll("#dots-indicator .dot");
+      dots.forEach((dot, idx) => {
+        if (idx === currentIndex) {
+          dot.style.backgroundColor = char.theme.primaryHex;
+          dot.classList.add("w-5", "scale-110");
+          dot.classList.remove("w-2", "bg-slate-400/50");
+        } else {
+          dot.style.backgroundColor = "";
+          dot.classList.remove("w-5", "scale-110");
+          dot.classList.add("w-2", "bg-slate-400/50");
+        }
+      });
+
+      const nextBtn = document.getElementById("next-btn");
+      if (nextBtn) {
+        nextBtn.className = `press-feedback flex-1 py-3 px-4 rounded-2xl shadow-md flex items-center justify-center gap-1.5 text-sm font-extrabold transition-colors duration-300 ${char.theme.btnBgClass} ${char.theme.btnTextClass}`;
+      }
+
+      // 觸發卡片進場微動畫與輕微觸覺震動回饋（若裝置支援）
+      if (triggerAnimation) {
+        const cardContent = document.getElementById("card-content");
+        cardContent.classList.remove("animate-card-enter");
+        void cardContent.offsetWidth; // 強制 reflow 重新觸發動畫
+        cardContent.classList.add("animate-card-enter");
+
+        if (navigator.vibrate) {
+          try {
+            navigator.vibrate(12);
+          } catch (e) {}
+        }
+      }
+    }
+
+    /**
+     * ============================================================================
+     * 5. 事件監聽：Tab 點擊、左右按鈕、鍵盤方向鍵與觸控左右滑動手勢（Swipe）
+     * ============================================================================
+     */
+    function bindEvents() {
+      // 4 格角色 Tab 點擊
+      document.querySelectorAll(".tab-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const idx = parseInt(btn.getAttribute("data-index"), 10);
+          if (idx !== currentIndex) {
+            renderCharacter(idx, true);
+          }
+        });
+      });
+
+      // 上一位 / 下一位按鈕
+      document.getElementById("prev-btn").addEventListener("click", () => {
+        renderCharacter(currentIndex - 1, true);
+      });
+      document.getElementById("next-btn").addEventListener("click", () => {
+        renderCharacter(currentIndex + 1, true);
+      });
+
+      // 深色/淺色主題切換
+      document.getElementById("theme-toggle-btn").addEventListener("click", () => {
+        applyThemeMode(!isDarkMode);
+        if (navigator.vibrate) {
+          try {
+            navigator.vibrate(10);
+          } catch (e) {}
+        }
+      });
+
+      // 鍵盤左右方向鍵支援
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowLeft") {
+          renderCharacter(currentIndex - 1, true);
+        } else if (e.key === "ArrowRight") {
+          renderCharacter(currentIndex + 1, true);
+        }
+      });
+
+      // 觸控左右滑動手勢（Swipe）偵測
+      const swipeArea = document.getElementById("swipe-area");
+      let touchStartX = 0;
+      let touchStartY = 0;
+
+      swipeArea.addEventListener(
+        "touchstart",
+        (e) => {
+          if (e.touches.length === 1) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+          }
+        },
+        { passive: true }
+      );
+
+      swipeArea.addEventListener(
+        "touchend",
+        (e) => {
+          if (e.changedTouches.length === 1) {
+            const deltaX = e.changedTouches[0].clientX - touchStartX;
+            const deltaY = e.changedTouches[0].clientY - touchStartY;
+
+            // 確保水平滑動距離大於垂直滑動，且超過 42px 閾值
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 42) {
+              if (deltaX < 0) {
+                renderCharacter(currentIndex + 1, true); // 向左滑 -> 下一位
+              } else {
+                renderCharacter(currentIndex - 1, true); // 向右滑 -> 上一位
+              }
+            }
+          }
+        },
+        { passive: true }
+      );
+    }
+
+    // 初始化應用程式
+    document.addEventListener("DOMContentLoaded", () => {
+      loadSavedPreferences();
+      applyThemeMode(isDarkMode);
+      generateBubbles();
+      bindEvents();
+      renderCharacter(currentIndex, false);
+    });
+  </script>
+</body>
+</html>
